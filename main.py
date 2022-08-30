@@ -1,24 +1,70 @@
 import asyncio
+import curses
 import logging
 import time
-import curses
+from random import choice, randint
 
 logger = logging.getLogger('async-console-game')
 
 TIC_TIMEOUT = 0.1
 
 
-# class EventLoopCommand():
-#     def __await__(self):
-#         return (yield self)
+def create_coroutines(canvas, coroutine_count=1):
+    """Создаёт список корутин."""
+    coordinates = []
+    coroutines = []
+
+    max_y, max_x = canvas.getmaxyx()
+
+    max_y, max_x = max_y - 2, max_x - 2
+
+    while coroutine_count != 0:
+        y = randint(1, max_y)
+        x = randint(1, max_x)
+
+        if (y, x) not in coordinates:
+            coordinates.append((y, x))
+            coroutines.append(blink(canvas, y, x, choice('+*.:')))
+
+            coroutine_count -= 1
+
+    return coroutines
 
 
-# class Sleep(EventLoopCommand):
-#     def __init__(self, seconds):
-#         self.seconds = seconds
+async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
+    """Display animation of gun shot, direction and speed can be specified."""
+
+    row, column = start_row, start_column
+
+    canvas.addstr(round(row), round(column), '*')
+    await asyncio.sleep(0)
+
+    canvas.addstr(round(row), round(column), 'O')
+    await asyncio.sleep(0)
+    canvas.addstr(round(row), round(column), ' ')
+
+    row += rows_speed
+    column += columns_speed
+
+    symbol = '-' if columns_speed else '|'
+
+    rows, columns = canvas.getmaxyx()
+    max_row, max_column = rows - 1, columns - 1
+
+    curses.beep()
+
+    while 0 < row < max_row and 0 < column < max_column:
+        canvas.addstr(round(row), round(column), symbol)
+        await asyncio.sleep(0)
+        canvas.addstr(round(row), round(column), ' ')
+        row += rows_speed
+        column += columns_speed
 
 
 async def blink(canvas, row, column, symbol='*'):
+    for _ in range(0, randint(0, 20)):
+        await asyncio.sleep(0)
+
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
         for _ in range(0, 20):
@@ -37,18 +83,9 @@ async def blink(canvas, row, column, symbol='*'):
             await asyncio.sleep(0)
 
 
-def show_text(canvas, row, column, text='*', attributes=curses.A_NORMAL, sleep=0.0):
-    canvas.addstr(row, column, text, attributes)
-    canvas.refresh()
-
-    time.sleep(sleep)
-
-
 def draw(canvas):
-    row, column = (5, 20)
-    # canvas.addstr(row, column, 'Hello, World!')
-
     canvas.border()
+    canvas.refresh()
 
     # coroutine = blink(canvas, row, column)
 
@@ -61,13 +98,18 @@ def draw(canvas):
     #     canvas.refresh()
     #     time.sleep(TIC_TIMEOUT)
 
-    coroutines = [
-        blink(canvas, row, 20),
-        blink(canvas, row, 23),
-        blink(canvas, row, 26),
-        blink(canvas, row, 29),
-        blink(canvas, row, 32),
-    ]
+    # row = 0
+
+    # coroutines = [
+    #     blink(canvas, row, 0),
+    #     blink(canvas, row, 23),
+    #     blink(canvas, row, 26),
+    #     blink(canvas, row, 29),
+    #     blink(canvas, row, 32),
+    # ]
+
+    coroutines = create_coroutines(canvas, 200)
+    coroutines.append(fire(canvas, 0, 100, rows_speed=0.3))
 
     while True:
         for coroutine in coroutines.copy():
