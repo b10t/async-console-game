@@ -5,30 +5,36 @@ import curses
 
 logger = logging.getLogger('async-console-game')
 
-
-class EventLoopCommand():
-    def __await__(self):
-        return (yield self)
+TIC_TIMEOUT = 0.1
 
 
-class Sleep(EventLoopCommand):
-    def __init__(self, seconds):
-        self.seconds = seconds
+# class EventLoopCommand():
+#     def __await__(self):
+#         return (yield self)
+
+
+# class Sleep(EventLoopCommand):
+#     def __init__(self, seconds):
+#         self.seconds = seconds
 
 
 async def blink(canvas, row, column, symbol='*'):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await asyncio.sleep(0)
+        for _ in range(0, 20):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for _ in range(0, 3):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await asyncio.sleep(0)
+        for _ in range(0, 5):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
+        for _ in range(0, 3):
+            await asyncio.sleep(0)
 
 
 def show_text(canvas, row, column, text='*', attributes=curses.A_NORMAL, sleep=0.0):
@@ -53,6 +59,7 @@ def draw(canvas):
     #         break
 
     #     canvas.refresh()
+    #     time.sleep(TIC_TIMEOUT)
 
     coroutines = [
         blink(canvas, row, 20),
@@ -71,7 +78,7 @@ def draw(canvas):
 
         canvas.refresh()
 
-        time.sleep(1)
+        time.sleep(TIC_TIMEOUT)
 
         if len(coroutines) == 0:
             break
