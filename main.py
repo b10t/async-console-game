@@ -7,7 +7,7 @@ import time
 from itertools import cycle
 from random import choice, randint
 
-from curses_tools import draw_frame, read_controls
+from curses_tools import draw_frame, get_frame_size, read_controls
 
 logger = logging.getLogger('async-console-game')
 
@@ -18,8 +18,6 @@ def load_spaceship_frames(folder='frames'):
     spaceship_frames = []
 
     for frame_filename in glob.glob(os.path.join(folder, 'rocket_frame_*.txt')):
-        logger.info(f'Found frame file: {frame_filename}')
-
         with open(frame_filename, 'r') as frame_file:
             spaceship_frames.append(frame_file.read())
 
@@ -50,6 +48,13 @@ def create_coroutines(canvas, coroutine_count=1):
 async def animate_spaceship(canvas, row, column, spaceship_frames):
     canvas.nodelay(True)
 
+    rows, columns = canvas.getmaxyx()
+    max_row, max_column = rows - 1, columns - 1
+
+    frame_rows, frame_columns = get_frame_size(spaceship_frames[0])
+    max_row -= frame_rows
+    max_column -= frame_columns
+
     old_frame = ''
     for frame in cycle(spaceship_frames):
         draw_frame(canvas, row, column, old_frame, negative=True)
@@ -66,6 +71,18 @@ async def animate_spaceship(canvas, row, column, spaceship_frames):
 
             row += rows_direction
             column += columns_direction
+
+            if row < 1:
+                row = 1
+
+            if column < 1:
+                column = 1
+
+            if row > max_row:
+                row = max_row
+
+            if column > max_column:
+                column = max_column
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -128,7 +145,7 @@ def draw(canvas):
 
     coroutines = create_coroutines(canvas, 200)
     # coroutines.append(fire(canvas, 0, 100, rows_speed=0.3))
-    coroutines.append(animate_spaceship(canvas, 5, 15, spaceship_frames))
+    coroutines.append(animate_spaceship(canvas, 1, 1, spaceship_frames))
 
     while True:
         for coroutine in coroutines.copy():
