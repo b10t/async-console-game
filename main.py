@@ -144,7 +144,6 @@ def draw(canvas):
     canvas.refresh()
 
     coroutines = create_coroutines(canvas, 200)
-    # coroutines.append(fire(canvas, 0, 100, rows_speed=0.3))
     coroutines.append(animate_spaceship(canvas, 1, 1, spaceship_frames))
 
     while True:
