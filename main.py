@@ -1,12 +1,29 @@
 import asyncio
 import curses
+import glob
 import logging
+import os
 import time
+from itertools import cycle
 from random import choice, randint
+
+from curses_tools import draw_frame, read_controls
 
 logger = logging.getLogger('async-console-game')
 
 TIC_TIMEOUT = 0.1
+
+
+def load_spaceship_frames(folder='frames'):
+    spaceship_frames = []
+
+    for frame_filename in glob.glob(os.path.join(folder, 'rocket_frame_*.txt')):
+        logger.info(f'Found frame file: {frame_filename}')
+
+        with open(frame_filename, 'r') as frame_file:
+            spaceship_frames.append(frame_file.read())
+
+    return spaceship_frames
 
 
 def create_coroutines(canvas, coroutine_count=1):
@@ -14,21 +31,41 @@ def create_coroutines(canvas, coroutine_count=1):
     coordinates = []
     coroutines = []
 
-    max_y, max_x = canvas.getmaxyx()
-
-    max_y, max_x = max_y - 2, max_x - 2
+    max_row, max_column = canvas.getmaxyx()
+    max_row, max_column = max_row - 2, max_column - 2
 
     while coroutine_count != 0:
-        y = randint(1, max_y)
-        x = randint(1, max_x)
+        row = randint(1, max_row)
+        column = randint(1, max_column)
 
-        if (y, x) not in coordinates:
-            coordinates.append((y, x))
-            coroutines.append(blink(canvas, y, x, choice('+*.:')))
+        if (row, column) not in coordinates:
+            coordinates.append((row, column))
+            coroutines.append(blink(canvas, row, column, choice('+*.:')))
 
             coroutine_count -= 1
 
     return coroutines
+
+
+async def animate_spaceship(canvas, row, column, spaceship_frames):
+    canvas.nodelay(True)
+
+    old_frame = ''
+    for frame in cycle(spaceship_frames):
+        draw_frame(canvas, row, column, old_frame, negative=True)
+        draw_frame(canvas, row, column, frame)
+        old_frame = frame
+        await asyncio.sleep(0)
+
+        rows_direction, columns_direction, space_pressed = read_controls(
+            canvas)
+
+        if rows_direction != 0 or columns_direction != 0:
+            draw_frame(canvas, row, column, old_frame, negative=True)
+            draw_frame(canvas, row, column, frame, negative=True)
+
+            row += rows_direction
+            column += columns_direction
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -84,32 +121,14 @@ async def blink(canvas, row, column, symbol='*'):
 
 
 def draw(canvas):
+    spaceship_frames = load_spaceship_frames()
+
     canvas.border()
     canvas.refresh()
 
-    # coroutine = blink(canvas, row, column)
-
-    # while True:
-    #     try:
-    #         coroutine.send(None)
-    #     except StopIteration:
-    #         break
-
-    #     canvas.refresh()
-    #     time.sleep(TIC_TIMEOUT)
-
-    # row = 0
-
-    # coroutines = [
-    #     blink(canvas, row, 0),
-    #     blink(canvas, row, 23),
-    #     blink(canvas, row, 26),
-    #     blink(canvas, row, 29),
-    #     blink(canvas, row, 32),
-    # ]
-
     coroutines = create_coroutines(canvas, 200)
-    coroutines.append(fire(canvas, 0, 100, rows_speed=0.3))
+    # coroutines.append(fire(canvas, 0, 100, rows_speed=0.3))
+    coroutines.append(animate_spaceship(canvas, 5, 15, spaceship_frames))
 
     while True:
         for coroutine in coroutines.copy():
