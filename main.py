@@ -24,23 +24,23 @@ def load_spaceship_frames(folder='frames'):
     return spaceship_frames
 
 
-def create_coroutines(canvas, coroutine_count=1):
-    """Создаёт список корутин."""
+def create_star_sky(canvas, star_count=1):
+    """Создаёт звездное небо."""
     coordinates = []
     coroutines = []
 
-    max_row, max_column = canvas.getmaxyx()
-    max_row, max_column = max_row - 2, max_column - 2
+    height, width = canvas.getmaxyx()
+    height, width = height - 2, width - 2
 
-    while coroutine_count != 0:
-        row = randint(1, max_row)
-        column = randint(1, max_column)
+    while star_count != 0:
+        row = randint(1, height)
+        column = randint(1, width)
 
         if (row, column) not in coordinates:
             coordinates.append((row, column))
             coroutines.append(blink(canvas, row, column, choice('+*.:')))
 
-            coroutine_count -= 1
+            star_count -= 1
 
     return coroutines
 
@@ -48,12 +48,12 @@ def create_coroutines(canvas, coroutine_count=1):
 async def animate_spaceship(canvas, row, column, spaceship_frames):
     canvas.nodelay(True)
 
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
+    height, width = canvas.getmaxyx()
+    height, width = height - 1, width - 1
 
     frame_rows, frame_columns = get_frame_size(spaceship_frames[0])
-    max_row -= frame_rows
-    max_column -= frame_columns
+    height -= frame_rows
+    width -= frame_columns
 
     old_frame = ''
     for frame in cycle(spaceship_frames):
@@ -78,11 +78,11 @@ async def animate_spaceship(canvas, row, column, spaceship_frames):
             if column < 1:
                 column = 1
 
-            if row > max_row:
-                row = max_row
+            if row > height:
+                row = height
 
-            if column > max_column:
-                column = max_column
+            if column > width:
+                column = width
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -143,7 +143,7 @@ def draw(canvas):
     canvas.border()
     canvas.refresh()
 
-    coroutines = create_coroutines(canvas, 200)
+    coroutines = create_star_sky(canvas, 200)
     coroutines.append(animate_spaceship(canvas, 1, 1, spaceship_frames))
 
     while True:
