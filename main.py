@@ -37,8 +37,11 @@ def create_star_sky(canvas, star_count=1):
         column = randint(1, width)
 
         if (row, column) not in coordinates:
+            offset_tics = randint(0, 20)
             coordinates.append((row, column))
-            coroutines.append(blink(canvas, row, column, choice('+*.:')))
+            coroutines.append(
+                blink(canvas, row, column, offset_tics, choice('+*.:'))
+            )
 
             star_count -= 1
 
@@ -46,8 +49,6 @@ def create_star_sky(canvas, star_count=1):
 
 
 async def animate_spaceship(canvas, row, column, spaceship_frames):
-    canvas.nodelay(True)
-
     height, width = canvas.getmaxyx()
     height, width = height - 1, width - 1
 
@@ -115,7 +116,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def blink(canvas, row, column, symbol='*'):
+async def blink(canvas, row, column, offset_tics, symbol='*'):
     for _ in range(0, randint(0, 20)):
         await asyncio.sleep(0)
 
@@ -140,6 +141,7 @@ async def blink(canvas, row, column, symbol='*'):
 def draw(canvas):
     spaceship_frames = load_spaceship_frames()
 
+    canvas.nodelay(True)
     canvas.border()
     canvas.refresh()
 
@@ -156,9 +158,6 @@ def draw(canvas):
         canvas.refresh()
 
         time.sleep(TIC_TIMEOUT)
-
-        if len(coroutines) == 0:
-            break
 
 
 if __name__ == '__main__':
