@@ -3,6 +3,7 @@ import curses
 import glob
 import logging
 import os
+import statistics
 import time
 from itertools import cycle
 from random import choice, randint
@@ -26,13 +27,14 @@ def load_spaceship_frames(folder='frames'):
 
 def create_star_sky(canvas, star_count=1):
     """Создаёт звездное небо."""
+    border_size = 2
     coordinates = []
     coroutines = []
 
     height, width = canvas.getmaxyx()
-    height, width = height - 2, width - 2
+    height, width = height - border_size, width - border_size
 
-    while star_count != 0:
+    while star_count:
         row = randint(1, height)
         column = randint(1, width)
 
@@ -56,34 +58,24 @@ async def animate_spaceship(canvas, row, column, spaceship_frames):
     height -= frame_rows
     width -= frame_columns
 
-    old_frame = ''
     for frame in cycle(spaceship_frames):
-        draw_frame(canvas, row, column, old_frame, negative=True)
         draw_frame(canvas, row, column, frame)
-        old_frame = frame
         await asyncio.sleep(0)
+
+        draw_frame(canvas, row, column, frame, negative=True)
 
         rows_direction, columns_direction, space_pressed = read_controls(
             canvas)
 
         if rows_direction != 0 or columns_direction != 0:
-            draw_frame(canvas, row, column, old_frame, negative=True)
-            draw_frame(canvas, row, column, frame, negative=True)
-
             row += rows_direction
             column += columns_direction
 
-            if row < 1:
-                row = 1
+            row = max(1, row)
+            column = max(1, column)
 
-            if column < 1:
-                column = 1
-
-            if row > height:
-                row = height
-
-            if column > width:
-                column = width
+            row = min(row, height)
+            column = min(column, width)
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -117,7 +109,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 
 
 async def blink(canvas, row, column, offset_tics, symbol='*'):
-    for _ in range(0, randint(0, 20)):
+    for _ in range(0, offset_tics):
         await asyncio.sleep(0)
 
     while True:
@@ -143,7 +135,6 @@ def draw(canvas):
 
     canvas.nodelay(True)
     canvas.border()
-    canvas.refresh()
 
     coroutines = create_star_sky(canvas, 200)
     coroutines.append(animate_spaceship(canvas, 1, 1, spaceship_frames))
