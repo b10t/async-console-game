@@ -51,8 +51,9 @@ def create_star_sky(canvas, star_count=1):
 
 
 async def animate_spaceship(canvas, row, column, spaceship_frames):
+    border_size = 1
     height, width = canvas.getmaxyx()
-    height, width = height - 1, width - 1
+    height, width = height - border_size, width - border_size
 
     frame_rows, frame_columns = get_frame_size(spaceship_frames[0])
     height -= frame_rows
@@ -64,10 +65,9 @@ async def animate_spaceship(canvas, row, column, spaceship_frames):
 
         draw_frame(canvas, row, column, frame, negative=True)
 
-        rows_direction, columns_direction, space_pressed = read_controls(
-            canvas)
+        rows_direction, columns_direction, _ = read_controls(canvas)
 
-        if rows_direction != 0 or columns_direction != 0:
+        if rows_direction or columns_direction:
             row += rows_direction
             column += columns_direction
 
